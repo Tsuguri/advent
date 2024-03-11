@@ -18,7 +18,7 @@ class Mapping
 
     public uint Map(uint value)
     {
-        // could be faster with some kind of binary search
+        // could be faster with some kind of binary search.
         foreach (SingleEntry entry in entries)
         {
             if (value >= entry.from && value < entry.from + entry.rangeLength)
@@ -29,11 +29,10 @@ class Mapping
         return value;
     }
 
-    public Mapping(List<Tuple<uint, uint, uint>> tuples)
+    public Mapping(List<SingleEntry> entries)
     {
-        entries = tuples.Select(x => new SingleEntry { from = x.Item2, to = x.Item1, rangeLength = x.Item3 }).ToList();
+        this.entries = entries;
     }
-
 }
 
 internal static class UintMappingExtensions
@@ -45,25 +44,19 @@ internal static class UintMappingExtensions
 }
 internal class FarmMappings
 {
-    internal static Func<uint, uint?> CreateMapping(InputData input)
+    internal static Func<uint, uint> CreateMapping(InputData input)
     {
-        var seedToSoil = new Mapping(input.seedToSoil);
-        var soilToFertilizer = new Mapping(input.soilToFertilizer);
-        var fertilizerToWater = new Mapping(input.fertilizerToWater);
-        var waterToLight = new Mapping(input.waterToLight);
-        var lightToTemperature = new Mapping(input.lightToTemperature);
-        var temperatureToHumidity = new Mapping(input.temperatureToHumidity);
-        var humidityToLocation = new Mapping(input.humidityToLocation);
-
-        return x =>
+        return seed =>
         {
-            var soil = x.Map(seedToSoil);
-            var fertilizer = soil.Map(soilToFertilizer);
-            var water = fertilizer.Map(fertilizerToWater);
-            var light = water.Map(waterToLight);
-            var temperature = light.Map(lightToTemperature);
-            var humidity = temperature.Map(temperatureToHumidity);
-            var location = humidity.Map(humidityToLocation);
+            // Initially wanted to do .Map(..).Map(..).Map(..) but it's hard to place breakpoints and see on stack trace which Map is running.
+            // I don't like the fact that it's using the same objects as input. Would prefer deep copy there for lambda to be self-contained.
+            var soil = seed.Map(input.seedToSoil);
+            var fertilizer = soil.Map(input.soilToFertilizer);
+            var water = fertilizer.Map(input.fertilizerToWater);
+            var light = water.Map(input.waterToLight);
+            var temperature = light.Map(input.lightToTemperature);
+            var humidity = temperature.Map(input.temperatureToHumidity);
+            var location = humidity.Map(input.humidityToLocation);
             return location;
         };
     }
